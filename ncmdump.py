@@ -8,18 +8,34 @@ import base64
 import json
 import os
 from Crypto.Cipher import AES
+import click
+from pathlib import Path
 
 
-def dump(file_path):
-    #十六进制转字符串
+@click.command()
+@click.option('--input', '-i', help='ncmdump file path')
+def dump(input, output):
+    files = Path(input).glob('*')
+
+    for file in files:
+        _dump(file, output)
+
+
+def _dump(input, output):
+    # process '.mp3' file only
+    if not Path(input).suffix.endswith('ncm'):
+        print('{} not ncm file. skipped'.format(input))
+        return
+    print('processing {}'.format(input))
+    # 十六进制转字符串
     core_key = binascii.a2b_hex("687A4852416D736F356B496E62617857")
     meta_key = binascii.a2b_hex("2331346C6A6B5F215C5D2630553C2728")
-    unpad = lambda s: s[0:-(s[-1] if type(s[-1]) == int else ord(s[-1]))]
-    f = open(file_path, 'rb')
+    def unpad(s): return s[0:-(s[-1] if type(s[-1]) == int else ord(s[-1]))]
+    f = open(input, 'rb')
     header = f.read(8)
-    #字符串转十六进制
+    # 字符串转十六进制
     assert binascii.b2a_hex(header) == b'4354454e4644414d'
-    f.seek(2,1)
+    f.seek(2, 1)
     key_length = f.read(4)
     key_length = struct.unpack('<I', bytes(key_length))[0]
     key_data = f.read(key_length)
@@ -62,7 +78,7 @@ def dump(file_path):
     image_size = struct.unpack('<I', bytes(image_size))[0]
     image_data = f.read(image_size)
     file_name = f.name.split("/")[-1].split(".ncm")[0] + '.' + meta_data['format']
-    m = open(os.path.join(os.path.split(file_path)[0], file_name), 'wb')
+    m = open(os.path.join(os.path.split(input)[0], file_name), 'wb')
     chunk = bytearray()
     while True:
         chunk = bytearray(f.read(0x8000))
@@ -76,10 +92,3 @@ def dump(file_path):
     m.close()
     f.close()
     return file_name
-
-
-if __name__ == '__main__':
-    file_list = ['陈芳语 - 爱你.ncm', '李翊君 - 雨蝶.ncm']
-    for file in file_list:
-        filepath = "F:\CloudMusic\\"+file
-        dump(filepath)
