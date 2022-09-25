@@ -14,14 +14,14 @@ from pathlib import Path
 
 @click.command()
 @click.option('--input', '-i', help='ncmdump file path')
-def dump(input, output):
+def dump(input):
     files = Path(input).glob('*')
 
     for file in files:
-        _dump(file, output)
+        _dump(file)
 
 
-def _dump(input, output):
+def _dump(input):
     # process '.mp3' file only
     if not Path(input).suffix.endswith('ncm'):
         print('{} not ncm file. skipped'.format(input))
@@ -92,3 +92,7 @@ def _dump(input, output):
     m.close()
     f.close()
     return file_name
+
+
+if __name__ == '__main__':
+    dump()
